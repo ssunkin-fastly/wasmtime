@@ -110,6 +110,8 @@ pub struct FuncEnvironment<'module_environment> {
     module: &'module_environment Module,
     types: &'module_environment ModuleTypes,
 
+    module_translation: &'module_environment ModuleTranslation<'module_environment>,
+
     /// Heaps implementing WebAssembly linear memories.
     heaps: PrimaryMap<Heap, HeapData>,
 
@@ -158,6 +160,7 @@ impl<'module_environment> FuncEnvironment<'module_environment> {
         translation: &'module_environment ModuleTranslation<'module_environment>,
         types: &'module_environment ModuleTypes,
         tunables: &'module_environment Tunables,
+        module_translation: &'module_environment ModuleTranslation,
     ) -> Self {
         let builtin_function_signatures = BuiltinFunctionSignatures::new(
             isa.pointer_type(),
@@ -181,6 +184,7 @@ impl<'module_environment> FuncEnvironment<'module_environment> {
             epoch_deadline_var: Variable::new(0),
             epoch_ptr_var: Variable::new(0),
             vmruntime_limits_ptr: Variable::new(0),
+            module_translation: module_translation,
 
             // Start with at least one fuel being consumed because even empty
             // functions should consume at least some fuel.
@@ -193,6 +197,8 @@ impl<'module_environment> FuncEnvironment<'module_environment> {
     }
 
     fn vmctx(&mut self, func: &mut Function) -> ir::GlobalValue {
+        //arbitrarily printing funcname/index from inside func_environ
+        println!("from vmctx {:?}", self.module_translation.debuginfo.name_section.func_names);
         self.vmctx.unwrap_or_else(|| {
             let vmctx = func.create_global_value(ir::GlobalValueData::VMContext);
             self.vmctx = Some(vmctx);

@@ -145,8 +145,7 @@ impl wasmtime_environ::Compiler for Compiler {
             context.func.collect_debug_info();
         }
 
-        let mut func_env = FuncEnvironment::new(isa, translation, types, tunables);
-
+        let mut func_env = FuncEnvironment::new(isa, translation, types, tunables, translation);
         // The `stack_limit` global value below is the implementation of stack
         // overflow checks in Wasmtime.
         //
