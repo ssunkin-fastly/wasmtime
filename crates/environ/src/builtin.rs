@@ -51,6 +51,10 @@ macro_rules! foreach_builtin_function {
             out_of_gas(vmctx: vmctx);
             /// Invoked when we reach a new epoch.
             new_epoch(vmctx: vmctx) -> i64;
+            /// Memcheck invoked when malloc is called.
+            check_malloc(vmctx: vmctx, addr: pointer, len: i64); // changed usize to i64 bc error "no rules expected the token usize"
+            // Memcheck invoked when free is called.
+            // check_free(vmctx: vmctx, addr: pointer);
         }
     };
 }

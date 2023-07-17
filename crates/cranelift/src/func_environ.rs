@@ -21,6 +21,7 @@ use wasmtime_environ::{
     TableStyle, Tunables, TypeConvert, VMOffsets, WASM_PAGE_SIZE,
 };
 use wasmtime_environ::{FUNCREF_INIT_BIT, FUNCREF_MASK};
+use crate::ir::Value; // is this the right place to import Value from?
 
 macro_rules! declare_function_signatures {
     (
@@ -110,7 +111,7 @@ pub struct FuncEnvironment<'module_environment> {
     module: &'module_environment Module,
     types: &'module_environment ModuleTypes,
 
-    module_translation: &'module_environment ModuleTranslation<'module_environment>,
+    translation: &'module_environment ModuleTranslation<'module_environment>,
 
     /// Heaps implementing WebAssembly linear memories.
     heaps: PrimaryMap<Heap, HeapData>,
@@ -160,7 +161,6 @@ impl<'module_environment> FuncEnvironment<'module_environment> {
         translation: &'module_environment ModuleTranslation<'module_environment>,
         types: &'module_environment ModuleTypes,
         tunables: &'module_environment Tunables,
-        module_translation: &'module_environment ModuleTranslation,
     ) -> Self {
         let builtin_function_signatures = BuiltinFunctionSignatures::new(
             isa.pointer_type(),
@@ -184,7 +184,7 @@ impl<'module_environment> FuncEnvironment<'module_environment> {
             epoch_deadline_var: Variable::new(0),
             epoch_ptr_var: Variable::new(0),
             vmruntime_limits_ptr: Variable::new(0),
-            module_translation: module_translation,
+            translation: translation,
 
             // Start with at least one fuel being consumed because even empty
             // functions should consume at least some fuel.
@@ -198,7 +198,7 @@ impl<'module_environment> FuncEnvironment<'module_environment> {
 
     fn vmctx(&mut self, func: &mut Function) -> ir::GlobalValue {
         //arbitrarily printing funcname/index from inside func_environ
-        println!("from vmctx {:?}", self.module_translation.debuginfo.name_section.func_names);
+        // println!("from vmctx {:?}", self.translation.debuginfo.name_section.func_names);
         self.vmctx.unwrap_or_else(|| {
             let vmctx = func.create_global_value(ir::GlobalValueData::VMContext);
             self.vmctx = Some(vmctx);
@@ -655,6 +655,49 @@ impl<'module_environment> FuncEnvironment<'module_environment> {
         // straightline length of any function body.
         self.epoch_check(builder);
     }
+
+    fn handle_after_entry(&mut self, instance: &mut Instance) {
+        // 
+    }
+
+    fn handle_before_return(&mut self, retvals: &[Value], func_index: FuncIndex, builder: &mut FunctionBuilder) {
+        let block = builder.func.layout.entry_block().unwrap();
+        let args = builder.func.dfg.block_params(block);
+        let func_name = self.translation.debuginfo.name_section.func_names[&func_index];
+        // there is also dlmalloc, realloc, calloc, etc; should these be checked for too?
+        if func_name == "malloc" { // not sure if this string comparison will work
+            // builder
+            //     .ins()
+            //     .call_indirect(check_malloc_exit, &[self.vmctx, retvals[0], args[0]]);
+        } else if func_name == "free" || func_name == "dlfree" {
+            // builder
+            //     .ins()
+            //     .call_indirect(check_free_exit, &[self.vmctx]);
+        }
+        // instance::valgrind_state::flag = false;
+    }
+
+    fn check_malloc_exit(&mut self, builder: &mut FunctionBuilder) {
+        let check_malloc_sig = self.builtin_function_signatures.check_malloc(builder.func);
+        let (vmctx, check_malloc) = self.translate_load_builtin_function_address(
+            &mut builder.cursor(),
+            BuiltinFunctionIndex::check_malloc(),
+        );
+        // builder
+        //     .ins()
+        //     .call_indirect(check_malloc_sig, check_malloc, &[vmctx, usize, usize]);
+    }
+
+    // fn check_free_exit(&mut self, builder: &mut FunctionBuilder) {
+    //     let check_free_sig = self.builtin_function_signatures.check_free(builder.func);
+    //     let (vmctx, check_free) = self.translate_load_builtin_function_address(
+    //         &mut builder.cursor(),
+    //         BuiltinFunctionIndex::check_free(),
+    //     );
+    //     builder
+    //         .ins()
+    //         .call_indirect(check_free_sig, check_free, &[vmctx, pointer]);
+    // }
 
     fn epoch_ptr(&mut self, builder: &mut FunctionBuilder<'_>) -> ir::Value {
         let vmctx = self.vmctx(builder.func);

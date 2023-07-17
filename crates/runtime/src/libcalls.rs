@@ -487,6 +487,16 @@ unsafe fn new_epoch(instance: &mut Instance) -> Result<u64> {
     (*instance.store()).new_epoch()
 }
 
+unsafe fn check_malloc(instance: &mut Instance, addr: pointer, len: i64) { // -> Result<(), AccessError> 
+    // let addr_usize;
+	// instance::valgrind_state::malloc(addr_usize, len)
+}
+
+// unsafe fn check_free(instance: &mut Instance, addr: pointer) -> Result<(), AccessError> {
+//     let addr_usize;
+//     instance::valgrind_state::free(addr_usize)
+// }
+
 /// This module contains functions which are used for resolving relocations at
 /// runtime if necessary.
 ///

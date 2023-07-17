@@ -82,7 +82,7 @@ impl FuncTranslator {
         func: &mut ir::Function,
         environ: &mut FE,
     ) -> WasmResult<()> {
-        println!("funcname: {:?}", func.name);
+        // println!("funcname: {:?}", func.name);
         let _tt = timing::wasm_translate_function();
         let mut reader = body.get_binary_reader();
         log::trace!(

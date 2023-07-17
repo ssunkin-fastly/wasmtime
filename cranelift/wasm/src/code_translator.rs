@@ -588,6 +588,9 @@ pub fn translate_operator<FE: FuncEnvironment + ?Sized>(
             };
             {
                 let return_args = state.peekn_mut(return_count);
+                // handle_before_return(&mut self, &return_args, __, builder);
+                // have to somehow get the FuncIndex; for some other operators,
+                // func_index is available
                 bitcast_wasm_returns(environ, return_args, builder);
                 builder.ins().return_(return_args);
             }
